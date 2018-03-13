@@ -4,12 +4,18 @@ defmodule PhxTodosWeb.TodoItemControllerTest do
   alias PhxTodos.Todo
   alias PhxTodos.Todo.TodoItem
 
-  @create_attrs %{status: "some status", title: "some title"}
-  @update_attrs %{status: "some updated status", title: "some updated title"}
+  @create_attrs %{status: "active", title: "some title"}
+  @create_completed_attrs %{status: "completed", title: "some title"}
+  @update_attrs %{status: "completed", title: "some updated title"}
   @invalid_attrs %{status: nil, title: nil}
 
-  def fixture(:todo_item) do
+  def fixture(:active_todo_item) do
     {:ok, todo_item} = Todo.create_todo_item(@create_attrs)
+    todo_item
+  end
+
+  def fixture(:completed_todo_item) do
+    {:ok, todo_item} = Todo.create_todo_item(@create_completed_attrs)
     todo_item
   end
 
@@ -17,23 +23,28 @@ defmodule PhxTodosWeb.TodoItemControllerTest do
     {:ok, conn: put_req_header(conn, "accept", "application/json")}
   end
 
-  describe "index" do
-    test "lists all todo_items", %{conn: conn} do
-      conn = get conn, todo_item_path(conn, :index)
-      assert json_response(conn, 200)["data"] == []
+  describe "active index" do
+    setup [:create_active_todo_item]
+
+    test "lists all active todo_items", %{conn: conn} do
+      conn = get conn, todo_item_path(conn, :index, status: "active")
+      assert length(json_response(conn, 200)["data"]) == 1
+    end
+  end
+
+  describe "completed index" do
+    setup [:create_completed_todo_item]
+
+    test "lists all completed todo_items", %{conn: conn} do
+      conn = get conn, todo_item_path(conn, :index, %{status: "completed"})
+      assert length(json_response(conn, 200)["data"]) == 1
     end
   end
 
   describe "create todo_item" do
     test "renders todo_item when data is valid", %{conn: conn} do
       conn = post conn, todo_item_path(conn, :create), todo_item: @create_attrs
-      assert %{"id" => id} = json_response(conn, 201)["data"]
-
-      conn = get conn, todo_item_path(conn, :show, id)
-      assert json_response(conn, 200)["data"] == %{
-        "id" => id,
-        "status" => "some status",
-        "title" => "some title"}
+      assert length(json_response(conn, 201)["data"]) == 1
     end
 
     test "renders errors when data is invalid", %{conn: conn} do
@@ -43,7 +54,7 @@ defmodule PhxTodosWeb.TodoItemControllerTest do
   end
 
   describe "update todo_item" do
-    setup [:create_todo_item]
+    setup [:create_active_todo_item]
 
     test "renders todo_item when data is valid", %{conn: conn, todo_item: %TodoItem{id: id} = todo_item} do
       conn = put conn, todo_item_path(conn, :update, todo_item), todo_item: @update_attrs
@@ -52,7 +63,7 @@ defmodule PhxTodosWeb.TodoItemControllerTest do
       conn = get conn, todo_item_path(conn, :show, id)
       assert json_response(conn, 200)["data"] == %{
         "id" => id,
-        "status" => "some updated status",
+        "status" => "completed",
         "title" => "some updated title"}
     end
 
@@ -63,7 +74,7 @@ defmodule PhxTodosWeb.TodoItemControllerTest do
   end
 
   describe "delete todo_item" do
-    setup [:create_todo_item]
+    setup [:create_active_todo_item]
 
     test "deletes chosen todo_item", %{conn: conn, todo_item: todo_item} do
       conn = delete conn, todo_item_path(conn, :delete, todo_item)
@@ -74,8 +85,13 @@ defmodule PhxTodosWeb.TodoItemControllerTest do
     end
   end
 
-  defp create_todo_item(_) do
-    todo_item = fixture(:todo_item)
+  defp create_active_todo_item(_) do
+    todo_item = fixture(:active_todo_item)
+    {:ok, todo_item: todo_item}
+  end
+
+  defp create_completed_todo_item(_) do
+    todo_item = fixture(:completed_todo_item)
     {:ok, todo_item: todo_item}
   end
 end

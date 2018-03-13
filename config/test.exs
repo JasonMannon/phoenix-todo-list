@@ -10,10 +10,4 @@ config :phx_todos, PhxTodosWeb.Endpoint,
 config :logger, level: :warn
 
 # Configure your database
-config :phx_todos, PhxTodos.Repo,
-  adapter: Ecto.Adapters.Postgres,
-  username: "postgres",
-  password: "postgres",
-  database: "phx_todos_test",
-  hostname: "localhost",
-  pool: Ecto.Adapters.SQL.Sandbox
+import_config "test.secret.exs"
